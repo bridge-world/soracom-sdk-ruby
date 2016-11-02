@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/bridge-world/soracom-sdk-ruby.svg?branch=master)](https://travis-ci.org/bridge-world/soracom-sdk-ruby)
+
 # SORACOM SDK for Ruby
 SORACOM SDK for Ruby は、株式会社 SORACOM の提供する IoT プラットフォームの API を Ruby プログラムからコールするためのライブラリとなります。  
 またコマンドラインインターフェース(CLI)も付属していますので、プログラムを組まなくてもシェルスクリプト等から API を呼び出す事が可能となります。
