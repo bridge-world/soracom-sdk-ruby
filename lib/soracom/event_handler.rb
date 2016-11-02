@@ -7,7 +7,7 @@ module Soracom
     def initialize(hash = {}, client = Soracom::Client.new)
       @log = Logger.new(STDERR)
       @log.level = ENV['SORACOM_DEBUG'] ? Logger::DEBUG : Logger::WARN
-      if hash.keys.length == 0 # 新規作成
+      if hash.keys.length.zero? # 新規作成
         hash = Hash[%w(handlerId targetImsi targetOperatorId targetTag name description ruleConfig actionConfigList).map { |k| [k, nil] }]
       end
       if hash.keys.length == 1 && hash.keys[0] == 'handlerId' # IDのみを指定して作成
@@ -25,7 +25,7 @@ module Soracom
     # 現在の内容でEventHandlerを作成または更新
     def save
       result = validate
-      fail result unless result == true
+      raise result unless result == true
       @log.debug(to_json)
       if handlerId
         @client.update_event_handler(handlerId, to_json)
@@ -35,9 +35,9 @@ module Soracom
     end
 
     def validate
-      return 'No target is defined' if [targetImsi, targetOperatorId, targetTag].compact.length == 0
-      return 'No rule is defined' if ruleConfig.nil? || ruleConfig.length == 0
-      return 'No action is defined' if actionConfigList.nil? || actionConfigList.length == 0
+      return 'No target is defined' if [targetImsi, targetOperatorId, targetTag].compact.length.zero?
+      return 'No rule is defined' if ruleConfig.nil? || ruleConfig.length.zero?
+      return 'No action is defined' if actionConfigList.nil? || actionConfigList.length.zero?
       true
     end
   end

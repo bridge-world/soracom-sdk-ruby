@@ -24,7 +24,7 @@ module Soracom
       when 'delete'
         response = http.delete(uri.path + query_string, headers)
       else
-        fail "unsupported HTTP verb #{verb}"
+        raise "unsupported HTTP verb #{verb}"
       end
       response
     end
