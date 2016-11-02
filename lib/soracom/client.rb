@@ -8,27 +8,27 @@ require 'logger'
 
 # SORACOM gem implementation
 module Soracom
-  API_BASE_URL = 'https://api.soracom.io/v1'
+  API_BASE_URL = 'https://api.soracom.io/v1'.freeze
   # Soracom API Client
   class Client
     # 設定されなかった場合には、環境変数から認証情報を取得
     def initialize(
         profile: nil,
         endpoint: ENV['SORACOM_ENDPOINT'] || API_BASE_URL,
-        email:ENV['SORACOM_EMAIL'], password:ENV['SORACOM_PASSWORD'],
-        auth_key_id:ENV['SORACOM_AUTH_KEY_ID'], auth_key:ENV['SORACOM_AUTH_KEY'],
-        operator_id:ENV['SORACOM_OPERATOR_ID'], user_name:ENV['SORACOM_USER_NAME'],
-        api_key:nil, token:nil
-      )
+        email: ENV['SORACOM_EMAIL'], password: ENV['SORACOM_PASSWORD'],
+        auth_key_id: ENV['SORACOM_AUTH_KEY_ID'], auth_key: ENV['SORACOM_AUTH_KEY'],
+        operator_id: ENV['SORACOM_OPERATOR_ID'], user_name: ENV['SORACOM_USER_NAME'],
+        api_key: nil, token: nil
+    )
       @log = Logger.new(STDERR)
       @log.level = ENV['SORACOM_DEBUG'] ? Logger::DEBUG : Logger::WARN
       @endpoint = endpoint
       begin
         if api_key && token && operator_id
           @auth = {
-            :apiKey => api_key,
-            :token => token,
-            :operatorId => operator_id
+            apiKey: api_key,
+            token: token,
+            operatorId: operator_id
           }
         elsif profile
           @auth = auth_by_profile(profile)
@@ -47,12 +47,12 @@ module Soracom
       if @auth
         @api = Soracom::ApiClient.new(@auth, @endpoint)
       else
-        fail 'Could not find any credentials(authKeyId & authKey or email & password or operatorId & userName and password)'
+        raise 'Could not find any credentials(authKeyId & authKey or email & password or operatorId & userName and password)'
       end
     end
 
     # 特定Operator下のSubscriber一覧を取
-    def list_subscribers(operatorId:@auth[:operatorId], limit:1024, filter:{})
+    def list_subscribers(operatorId: @auth[:operatorId], limit: 1024, filter: {})
       filter = Hash[filter.map { |k, v| [k.to_sym, v] }]
       if filter[:key].nil?
         return @api.get(path: '/subscribers', params: { operatorId: operatorId, limit: limit })
@@ -73,12 +73,12 @@ module Soracom
       end
     end
 
-    def subscribers(operatorId:@auth[:operatorId], limit:1024, filter:{})
+    def subscribers(operatorId: @auth[:operatorId], limit: 1024, filter: {})
       list_subscribers(operatorId: operatorId, limit: limit, filter: filter).map { |s| Soracom::Subscriber.new(s, self) }
     end
 
     # SIMの登録
-    def register_subscriber(imsi:nil, registration_secret:nil, groupId:nil, tags:{})
+    def register_subscriber(imsi: nil, registration_secret: nil, groupId: nil, tags: {})
       params = { registrationSecret: registration_secret, tags: tags }
       params[groupId] = groupId if groupId
       @api.post(path: "/subscribers/#{imsi}", payload: params)
@@ -240,15 +240,15 @@ module Soracom
     # SIMグループの一覧を取得
     def list_groups(group_id)
       if group_id
-        [ @api.get(path: "/groups/#{group_id}") ]
+        [@api.get(path: "/groups/#{group_id}")]
       else
         @api.get(path: '/groups')
       end
     end
 
     # SIMグループを新規作成
-    def create_group(tags=nil)
-      payload = (tags) ? { tags: tags } : {}
+    def create_group(tags = nil)
+      payload = tags ? { tags: tags } : {}
       @api.post(path: '/groups', payload: payload)
     end
 
@@ -284,7 +284,7 @@ module Soracom
     end
 
     # イベントハンドラーの一覧を得る
-    def list_event_handlers(handler_id:nil, target:nil, imsi:nil)
+    def list_event_handlers(handler_id: nil, target: nil, imsi: nil)
       if handler_id
         [@api.get(path: "/event_handlers/#{handler_id}")]
       elsif imsi
@@ -292,7 +292,7 @@ module Soracom
       elsif target # target is one of imsi/operator/tag
         @api.get(path: '/event_handlers', params: { target: target })
       else
-        @api.get(path: "/event_handlers")
+        @api.get(path: '/event_handlers')
       end
     end
 
@@ -317,23 +317,23 @@ module Soracom
     end
 
     # Subscriber毎のAir使用状況を得る(デフォルトでは直近１日)
-    def get_air_usage(imsi:nil, from:(Time.now.to_i - 24 * 60 * 60), to:Time.now.to_i, period:'minutes')
+    def get_air_usage(imsi: nil, from: (Time.now.to_i - 24 * 60 * 60), to: Time.now.to_i, period: 'minutes')
       @api.get(path: "/stats/air/subscribers/#{imsi}", params: { from: from, to: to, period: period })
     end
 
     # Subscriber毎のBeam使用状況を得る(デフォルトでは直近１日)
-    def get_beam_usage(imsi:nil, from:(Time.now.to_i - 24 * 60 * 60), to:Time.now.to_i, period:'minutes')
+    def get_beam_usage(imsi: nil, from: (Time.now.to_i - 24 * 60 * 60), to: Time.now.to_i, period: 'minutes')
       @api.get(path: "/stats/beam/subscribers/#{imsi}", params: { from: from, to: to, period: period })
     end
 
     # Operator配下の全Subscriberに関するAir使用状況をダウンロードする(デフォルトでは今月)
-    def export_air_usage(operator_id:@auth[:operatorId] , from:Time.parse("#{Time.now.year}-#{Time.now.month}-#{Time.now.day}").to_i, to:Time.now.to_i, period:'day')
+    def export_air_usage(operator_id: @auth[:operatorId], from: Time.parse("#{Time.now.year}-#{Time.now.month}-#{Time.now.day}").to_i, to: Time.now.to_i, period: 'day')
       res = @api.post(path: "/stats/air/operators/#{operator_id}/export", payload: { from: from, to: to, period: period })
       open(res['url']).read
     end
 
     # Operator配下の全Subscriberに関するBeam使用状況をダウンロードする(デフォルトでは今月)
-    def export_beam_usage(operator_id:@auth[:operatorId] , from:Time.parse("#{Time.now.year}-#{Time.now.month}-#{Time.now.day}").to_i, to:Time.now.to_i, period:'day')
+    def export_beam_usage(operator_id: @auth[:operatorId], from: Time.parse("#{Time.now.year}-#{Time.now.month}-#{Time.now.day}").to_i, to: Time.now.to_i, period: 'day')
       res = @api.post(path: "/stats/beam/operators/#{operator_id}/export", payload: { from: from, to: to, period: period })
       open(res['url']).read
     end
@@ -344,7 +344,7 @@ module Soracom
       "https://soracom.zendesk.com/access/jwt?jwt=#{res['token']}&return_to=#{return_to}"
     end
 
-    def list_credentials()
+    def list_credentials
       @api.get(path: '/credentials')
     end
 
@@ -357,7 +357,7 @@ module Soracom
     end
 
     # SAMユーザー一覧取得
-    def list_users()
+    def list_users
       @api.get(path: "/operators/#{@auth[:operatorId]}/users")
     end
 
@@ -367,27 +367,27 @@ module Soracom
     end
 
     # SAMユーザー取得
-    def get_user(username=@auth[:userName])
+    def get_user(username = @auth[:userName])
       @api.get(path: "/operators/#{@auth[:operatorId]}/users/#{username}")
     end
 
     # SAMユーザーを新しく追加する
-    def create_user(username, description='')
+    def create_user(username, description = '')
       @api.post(path: "/operators/#{@auth[:operatorId]}/users/#{username}", payload: { description: description })
     end
 
     # SAMユーザーを更新する
-    def update_user(username, description='')
+    def update_user(username, description = '')
       @api.put(path: "/operators/#{@auth[:operatorId]}/users/#{username}", payload: { description: description })
     end
 
     # SAMユーザーのAuthKey一覧取得
-    def list_users_auth_key(username=@auth[:userName])
+    def list_users_auth_key(username = @auth[:userName])
       @api.get(path: "/operators/#{@auth[:operatorId]}/users/#{username}/auth_keys")
     end
 
     # SAMユーザーのAuthKey生成
-    def generate_users_auth_key(username=@auth[:userName])
+    def generate_users_auth_key(username = @auth[:userName])
       @api.post(path: "/operators/#{@auth[:operatorId]}/users/#{username}/auth_keys")
     end
 
@@ -402,32 +402,32 @@ module Soracom
     end
 
     # SAMユーザーのパスワードを削除する
-    def delete_user_password(username=@auth[:userName])
+    def delete_user_password(username = @auth[:userName])
       @api.delete(path: "/operators/#{@auth[:operatorId]}/users/#{username}/password")
     end
 
     # SAMユーザーのパスワードがセットされているかを取得する
-    def has_user_password(username=@auth[:userName])
+    def has_user_password(username = @auth[:userName])
       @api.get(path: "/operators/#{@auth[:operatorId]}/users/#{username}/password")
     end
 
     # SAMユーザーのパスワードを作成する
-    def create_user_password(username=@auth[:userName], password)
-      @api.post(path: "/operators/#{@auth[:operatorId]}/users/#{username}/password", payload:{password: password})
+    def create_user_password(username = @auth[:userName], password)
+      @api.post(path: "/operators/#{@auth[:operatorId]}/users/#{username}/password", payload: { password: password })
     end
 
     # SAMユーザーの権限設定を取得する
-    def get_user_permission(username=@auth[:userName])
+    def get_user_permission(username = @auth[:userName])
       @api.get(path: "/operators/#{@auth[:operatorId]}/users/#{username}/permission")
     end
 
     # SAMユーザーの権限を更新する
-    def update_user_permission(username=@auth[:userName], permission="", description="")
-      @api.put(path: "/operators/#{@auth[:operatorId]}/users/#{username}/permission", payload:{description: description, permission: permission})
+    def update_user_permission(username = @auth[:userName], permission = '', description = '')
+      @api.put(path: "/operators/#{@auth[:operatorId]}/users/#{username}/permission", payload: { description: description, permission: permission })
     end
 
     # Role一覧取得
-    def list_roles()
+    def list_roles
       @api.get(path: "/operators/#{@auth[:operatorId]}/roles")
     end
 
@@ -442,13 +442,13 @@ module Soracom
     end
 
     # Role を新しく追加する
-    def create_role(role_id, permission, description='')
-      @api.post(path: "/operators/#{@auth[:operatorId]}/roles/#{role_id}", payload:{description: description, permission: permission})
+    def create_role(role_id, permission, description = '')
+      @api.post(path: "/operators/#{@auth[:operatorId]}/roles/#{role_id}", payload: { description: description, permission: permission })
     end
 
     # Role を編集する
-    def update_role(role_id, permission, description='')
-      @api.put(path: "/operators/#{@auth[:operatorId]}/roles/#{role_id}", payload:{description: description, permission: permission})
+    def update_role(role_id, permission, description = '')
+      @api.put(path: "/operators/#{@auth[:operatorId]}/roles/#{role_id}", payload: { description: description, permission: permission })
     end
 
     # Role に紐づくユーザーの一覧を取得する
@@ -463,7 +463,7 @@ module Soracom
 
     # SAMユーザーにロールをアタッチ
     def attach_role_to_user(user_name, role_id)
-      @api.post(path: "/operators/#{@auth[:operatorId]}/users/#{user_name}/roles", payload: {roleId: role_id})
+      @api.post(path: "/operators/#{@auth[:operatorId]}/users/#{user_name}/roles", payload: { roleId: role_id })
     end
 
     # SAMユーザーからロールをデタッチ
@@ -472,12 +472,12 @@ module Soracom
     end
 
     # OperatorのAuthKey一覧取得
-    def list_operator_auth_keys()
+    def list_operator_auth_keys
       @api.get(path: "/operators/#{@auth[:operatorId]}/auth_keys")
     end
 
     # OperatorのAuthKey生成
-    def generate_operator_auth_key()
+    def generate_operator_auth_key
       @api.post(path: "/operators/#{@auth[:operatorId]}/auth_keys")
     end
 
@@ -516,7 +516,7 @@ module Soracom
                             'Content-Type' => 'application/json',
                             'Accept' => 'application/json'
       result = JSON.parse(res.body)
-      fail result['message'] if res.code != '200'
+      raise result['message'] if res.code != '200'
       Hash[JSON.parse(res.body).map { |k, v| [k.to_sym, v] }]
     end
 
@@ -528,7 +528,7 @@ module Soracom
                             'Content-Type' => 'application/json',
                             'Accept' => 'application/json'
       result = JSON.parse(res.body)
-      fail result['message'] if res.code != '200'
+      raise result['message'] if res.code != '200'
       Hash[JSON.parse(res.body).map { |k, v| [k.to_sym, v] }]
     end
 
@@ -540,18 +540,18 @@ module Soracom
                             'Content-Type' => 'application/json',
                             'Accept' => 'application/json'
       result = JSON.parse(res.body)
-      fail result['message'] if res.code != '200'
+      raise result['message'] if res.code != '200'
       Hash[JSON.parse(res.body).map { |k, v| [k.to_sym, v] }]
     end
 
     def auth_by_profile(profile)
       begin
-        profile_string = open( "#{ENV['HOME']}/.soracom/#{profile}.json").read
+        profile_string = open("#{ENV['HOME']}/.soracom/#{profile}.json").read
       rescue Errno::ENOENT
         if profile == 'default'
           return nil
         else
-          fail "Could not open #{ENV['HOME']}/.soracom/#{profile}.json"
+          raise "Could not open #{ENV['HOME']}/.soracom/#{profile}.json"
         end
       end
 
@@ -576,12 +576,12 @@ module Soracom
 
     def transform_json(json)
       begin
-        target=JSON.parse(json)
+        target = JSON.parse(json)
         if target.class == Hash
-          target = target.map{|k,v| {"key" => k, "value" => v}}
+          target = target.map { |k, v| { 'key' => k, 'value' => v } }
         end
       rescue JSON::ParserError
-        abort("ERROR: parameter cannot be parsed as JSON.")
+        abort('ERROR: parameter cannot be parsed as JSON.')
       end
       JSON.pretty_generate target
     end
