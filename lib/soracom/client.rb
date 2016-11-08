@@ -42,7 +42,7 @@ module Soracom
           @auth = auth_by_profile('default')
         end
       rescue => evar
-        abort 'ERROR: ' + evar.to_s
+        raise 'ERROR: ' + evar.to_s
       end
       if @auth
         @api = Soracom::ApiClient.new(@auth, @endpoint)
@@ -581,7 +581,7 @@ module Soracom
           target = target.map { |k, v| { 'key' => k, 'value' => v } }
         end
       rescue JSON::ParserError
-        abort('ERROR: parameter cannot be parsed as JSON.')
+        raise('ERROR: parameter cannot be parsed as JSON.')
       end
       JSON.pretty_generate target
     end
